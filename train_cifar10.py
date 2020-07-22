@@ -50,8 +50,8 @@ transform_test = transforms.Compose([
     transforms.ToTensor(),
     transforms.Normalize((norm_mean,norm_mean,norm_mean), (norm_var, norm_var, norm_var)),
 ])
-cifar_train = datasets.CIFAR10("/home/yelobean/dataset", train=True, download=False, transform=transform_train)
-cifar_test = datasets.CIFAR10("/home/yelobean/dataset", train=False, download=False, transform=transform_test)
+cifar_train = datasets.CIFAR10("/home/yelobean/dataset", train=True, download=True, transform=transform_train)
+cifar_test = datasets.CIFAR10("/home/yelobean/dataset", train=False, download=True, transform=transform_test)
 train_loader = DataLoader(cifar_train, batch_size = 256, shuffle=True)
 test_loader = DataLoader(cifar_test, batch_size = 100, shuffle=True)
 
@@ -78,6 +78,12 @@ else:
         model = resnet.SparseResNet18(sparsities=[0.1, 0.1, 0.1, 0.1], sparse_func='vol').to(device)
     else:
         model = resnet.ResNet18().to(device)
+
+if len(args.gpu) > 2:
+    import torch.backends.cudnn as cudnn
+    if device == 'cuda':
+        model = torch.nn.DataParallel(model)
+        cudnn.benchmark = True
 
 opt = optim.SGD(model.parameters(), lr=0.1, momentum=0.9)
 eps = 8/255
