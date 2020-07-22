@@ -520,10 +520,10 @@ def trades_loss(model,
                 x_natural,
                 y,
                 optimizer,
-                step_size=0.003,
-                epsilon=0.031,
-                perturb_steps=10,
-                beta=1.0,
+                alpha,
+                epsilon,
+                num_iter,
+                beta,
                 distance='l_inf'):
     # define KL-loss
     criterion_kl = nn.KLDivLoss(size_average=False)
@@ -532,17 +532,17 @@ def trades_loss(model,
     # generate adversarial example
     x_adv = x_natural.detach() + 0.001 * torch.randn_like(x_natural).detach()
     if distance == 'l_inf':
-        for _ in range(perturb_steps):
+        for _ in range(num_iter):
             x_adv.requires_grad_()
             with torch.enable_grad():
                 loss_kl = criterion_kl(F.log_softmax(model(x_adv), dim=1),
                                        F.softmax(model(x_natural), dim=1))
             grad = torch.autograd.grad(loss_kl, [x_adv])[0]
-            x_adv = x_adv.detach() + step_size * torch.sign(grad.detach())
+            x_adv = x_adv.detach() + alpha * torch.sign(grad.detach())
             x_adv = torch.min(torch.max(x_adv, x_natural - epsilon), x_natural + epsilon)
             x_adv = torch.clamp(x_adv, 0.0, 1.0)
     elif distance == 'l_2':
-        for _ in range(perturb_steps):
+        for _ in range(num_iter):
             x_adv.requires_grad_()
             with torch.enable_grad():
                 loss_kl = criterion_kl(F.log_softmax(model(x_adv), dim=1),
@@ -552,7 +552,7 @@ def trades_loss(model,
                 grad_idx = grad[idx_batch]
                 grad_idx_norm = l2_norm(grad_idx)
                 grad_idx /= (grad_idx_norm + 1e-8)
-                x_adv[idx_batch] = x_adv[idx_batch].detach() + step_size * grad_idx
+                x_adv[idx_batch] = x_adv[idx_batch].detach() + alpha * grad_idx
                 eta_x_adv = x_adv[idx_batch] - x_natural[idx_batch]
                 norm_eta = l2_norm(eta_x_adv)
                 if norm_eta > epsilon:
