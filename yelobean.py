@@ -88,16 +88,19 @@ if len(args.gpu) > 2:
 
 opt = optim.SGD(model.parameters(), lr=0.1, momentum=0.9)
 eps = 8/255
-for ep in range(80):
+for ep in range(200):
     print('gpu:', args.gpu)
     print('iter:', args.iters)
     print('is_kWTA:', args.is_kWTA)
     print('which_AT:', args.which_AT)
     print('is_Wide:', args.is_Wide)
 
-    if ep == 50:
+    if ep == 100:
         for param_group in opt.param_groups:
                 param_group['lr'] = 0.01
+    if ep == 150:
+        for param_group in opt.param_groups:
+                param_group['lr'] = 0.001
 
     start_time = time.time()
 
@@ -136,4 +139,4 @@ for ep in range(80):
 
     if args.is_test:
         break
-    torch.save(model.state_dict(), 'models/resnet18_cifar' + name + '.pth')
+    torch.save(model.state_dict(), 'models/resnet18_cifar' + name + '_epoch200.pth')
